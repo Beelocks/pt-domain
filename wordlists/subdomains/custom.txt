@@ -1,0 +1,9 @@
+api
+vpn
+internal
+devops
+k8s
+prod
+stg
+auth
+legacy
