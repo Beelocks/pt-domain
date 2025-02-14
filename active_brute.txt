@@ -1,0 +1,30 @@
+# Persiapan
+dnsvalidator -tL https://public-dns.info/nameservers.txt -threads 50 -o resolvers.txt
+
+# Bruteforce 3 lapis
+## Lapis 1: Wordlist umum + resolusi cepat
+shuffledns -d example.com \
+  -w ~/wordlists/subdomains/top1m-200k.txt \
+  -r resolvers.txt \
+  -o active_temp1.txt \
+  -massdns ./massdns \
+  -nf massdns.out
+
+## Lapis 2: Permutasi cerdas
+dnsgen 01-subs/passive_initial.txt | 
+  shuffledns -d example.com -r resolvers.txt \
+  -o active_temp2.txt
+
+## Lapis 3: Kombinasi karakter khusus
+comb -list ~/wordlists/subdomains/common-prefixes.txt -o comb_temp.txt
+dnsx -l comb_temp.txt -d example.com -silent | 
+  awk '{print $1".example.com"}' > active_temp3.txt
+
+# Gabungkan hasil bruteforce
+cat active_temp*.txt | 
+  anew | 
+  dnsx -silent -rcode noerror -retry 2 -r resolvers.txt | 
+  awk '{print $1}' > 01-subs/active_brute.txt
+
+# Bersihkan
+rm active_temp*.txt comb_temp.txt
