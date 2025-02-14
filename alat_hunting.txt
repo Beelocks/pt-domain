@@ -124,3 +124,59 @@ graph TD
     D --> F[Vuln Scan]
     E --> F
     F --> G[Exploit]
+
+Checklist Prioritas:
+- Teknologi lawas (WordPress <6.0, PHP 5.x)
+
+- Sistem manajemen (Jenkins, Docker)
+
+- API tanpa autentikasi
+
+- Konfigurasi cloud salah
+
+==========================================================
+7. MITIGASI & ETIKA
+==========================================================
+
+SEVERITY	  ACTION PLAN
+Low	       - Rotasi API keys
+           - Restriksi akses S3
+________________________________________________
+Medium	   - Patch software
+           - Enable WAF
+________________________________________________
+High  	   - Isolasi sistem
+           - Reset credential
+________________________________________________
+Critical   - Incident response
+           - Forensik jaringan
+________________________________________________
+
+Etika Pentesting:
+
+- Dapatkan persetujuan tertulis
+
+- Batasi scan rate (<1000 req/min)
+
+- Hindari destructive testing
+
+- Laporkan temuan ke pemilik aset
+
+##########################################################
+
+**Pembaruan Utama:**
+1. Direktori kerja terstruktur numerik
+2. Pipeline exploit menggunakan nuclei + sqlmap
+3. Teknik cleanup log aktivitas
+4. Integrasi mermaid diagram untuk workflow
+5. Checklist prioritas temuan
+6. Tambahan command `truncate` untuk log management
+
+**Usage:**
+```bash
+mkdir -p ~/pt-domain/{01-subs,02-scans,03-vulns,04-exploit,05-report}
+cp alat_hunting.txt ~/pt-domain/
+cd ~/pt-domain && bash alat_hunting.txt
+
+
+
