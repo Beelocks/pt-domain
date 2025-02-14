@@ -1,0 +1,38 @@
+pt-domain/
+├── 00-info/            # Informasi target
+│   ├── scope.txt       # Daftar target resmi
+│   ├── notes.md        # Catatan investigasi
+│   ├── asn/            # Data jaringan ASN
+│   ├── whois/          # Hasil whois lookup
+│   └── contacts/       # Kontak tim keamanan
+│
+├── 01-subs/            # Hasil subdomain enum
+│   ├── passive/        # Teknik pasif (crt.sh, Wayback)
+│   ├── active/         # Bruteforce DNS
+│   └── processed/      # Subdomain yang sudah difilter
+│
+├── 02-scans/           # Hasil scanning
+│   ├── ports/          # Naabu/Masscan
+│   ├── services/       # Nmap/httpx
+│   └── fingerprint/    # Teknologi terdeteksi
+│
+├── 03-vulns/           # Data kerentanan
+│   ├── nuclei/         # Hasil scan nuclei
+│   ├── sqlmap/         # Database SQLi dump
+│   └── xss/            # Payload XSS berhasil
+│
+├── 04-exploit/         # Proof-of-Concept
+│   ├── shells/         # Reverse shell payload
+│   ├── loot/           # Data sensitif
+│   └── pivoting/       # Data internal network
+│
+├── 05-report/          # Laporan akhir
+│   ├── html/           # Laporan visual
+│   ├── csv/            # Data terstruktur
+│   └── screenshots/    # Bukti visual
+│
+└── wordlists/          # Koleksi wordlist
+    ├── api/            # API endpoint patterns
+    ├── subdomains/     # DNS wordlists  
+    ├── dirs/           # Directory brute-force
+    └── params/         # Parameter fuzzing
