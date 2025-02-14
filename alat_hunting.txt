@@ -177,6 +177,31 @@ Etika Pentesting:
 mkdir -p ~/pt-domain/{01-subs,02-scans,03-vulns,04-exploit,05-report}
 cp alat_hunting.txt ~/pt-domain/
 cd ~/pt-domain && bash alat_hunting.txt
+___________________________________________________________________________
+# Optimasi Tambahan:
+_____________________________________________________________________________
+# 1.Filter Wildcard:
 
+# Deteksi wildcard
+shuffledns -d example.com -w ~/wordlists/subdomains/wildcard-test.txt -r resolvers.txt -o wildcard.txt
+
+# Filter hasil bruteforce
+comm -23 active_brute.txt wildcard.txt > filtered_brute.txt
+
+_____________________________________________________________________________
+# 2.Post-Processing Canggih:
+
+# Filter subdomain valid dengan DNS
+cat 01-subs/*.txt | 
+  dnsx -silent -rcode noerror,nxdomain -r resolvers.txt -retry 3 | 
+  grep -E '.*\.example\.com$' | 
+  sed 's/\.$//' | 
+  sort -u > 01-subs/final_subs.txt
+
+# Visualisasi dengan Airium
+cat final_subs.txt | 
+  awk -F. '{print $(NF-2)"."$(NF-1)"."$NF}' | 
+  sort | uniq -c | 
+  sort -nr > subs_distribution.txt
 
 
