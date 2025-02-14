@@ -1,0 +1,38 @@
+# Kombinasi 15+ sumber intelijen
+subfinder -d example.com -silent \
+  -s 'censys,otx,shodan,securitytrails,passivetotal,riddler,bufferover,threatminer,anubis,alienvault' \
+  -o passive_temp1.txt
+
+# Certificate Transparency dengan filter khusus
+curl -s "https://crt.sh/?q=%.example.com&output=json" | jq -r '.[].name_value' | 
+  sed -e 's/\*\.//g' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | 
+  grep -E '^([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*\.)+example\.com$' > passive_temp2.txt
+
+# Wayback Machine dengan ekstraksi pola khusus
+waybackurls example.com | 
+  grep -Eo '([a-zA-Z0-9_-]+\.){1,}example\.com' | 
+  awk -F/ '{print $1}' | sort -u > passive_temp3.txt
+
+# URLScan.io dengan paginasi
+for i in {0..5}; do
+  curl -s "https://urlscan.io/api/v1/search/?q=domain:example.com&offset=$((i*1000))" | 
+    jq -r '.results[].page.domain'
+done | grep 'example.com$' > passive_temp4.txt
+
+# GitHub Leaks Search
+github-subdomains -t <GITHUB_TOKEN> -d example.com > passive_temp5.txt
+
+# AlienVault OTX dengan filter
+curl -s "https://otx.alienvault.com/api/v1/indicators/hostname/example.com/passive_dns" | 
+  jq -r '.passive_dns[].hostname' | 
+  grep -E '^[a-zA-Z0-9.-]+\.example\.com$' > passive_temp6.txt
+
+# Gabungkan semua hasil pasif
+cat passive_temp*.txt | 
+  anew | 
+  grep -Ev '^(dev|test|stage)\.' |  # Filter subdomain umum
+  dnsx -silent -retry 2 -rcode noerror,nxdomain |  # Validasi cepat
+  awk '{print $1}' > 01-subs/passive_initial.txt
+
+# Bersihkan file temporary
+rm passive_temp*.txt
