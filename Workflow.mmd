@@ -1,0 +1,9 @@
+graph TD
+    A[Subdomain Enum] --> B[Port Scan]
+    B --> C{Port 80/443?}
+    C -->|Ya| D[Web Scanning]
+    C -->|Tidak| E[Service Fingerprint]
+    D --> F[Vuln Assessment]
+    E --> F
+    F --> G[Exploit Validation]
+    G --> H[Reporting]
